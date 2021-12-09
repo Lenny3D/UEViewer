@@ -509,7 +509,7 @@ void ExportPsk(const CSkeletalMesh *Mesh)
 
 	if (OriginalMesh->GetTypeinfo()->NumProps)
 	{
-		FArchive* PropAr = CreateExportArchive(OriginalMesh, EFileArchiveOptions::TextFile, "%s.props.txt", OriginalMesh->Name);
+		FArchive* PropAr = CreateExportArchive(OriginalMesh, EFileArchiveOptions::TextFile, "%s.props.json", OriginalMesh->Name);
 		if (PropAr)
 		{
 			OriginalMesh->GetTypeinfo()->SaveProps(OriginalMesh, *PropAr);
@@ -771,7 +771,7 @@ static void DoExportPsa(const CAnimSet* Anim, const UObject* OriginalAnim)
 	//todo: .props.txt is not saved when multiple animations are stored in a single .psa file
 	if (OriginalAnim->GetTypeinfo()->NumProps)
 	{
-		FArchive* PropAr = CreateExportArchive(OriginalAnim, EFileArchiveOptions::TextFile, "%s.props.txt", OriginalAnim->Name);
+		FArchive* PropAr = CreateExportArchive(OriginalAnim, EFileArchiveOptions::TextFile, "%s.props.json", OriginalAnim->Name);
 		if (PropAr)
 		{
 			OriginalAnim->GetTypeinfo()->SaveProps(OriginalAnim, *PropAr);
@@ -930,7 +930,7 @@ void ExportStaticMesh(const CStaticMesh *Mesh)
 
 	if (OriginalMesh->GetTypeinfo()->NumProps)
 	{
-		FArchive* PropAr = CreateExportArchive(OriginalMesh, EFileArchiveOptions::TextFile, "%s.props.txt", OriginalMesh->Name);
+		FArchive* PropAr = CreateExportArchive(OriginalMesh, EFileArchiveOptions::TextFile, "%s.props.json", OriginalMesh->Name);
 		if (PropAr)
 		{
 			OriginalMesh->GetTypeinfo()->SaveProps(OriginalMesh, *PropAr);

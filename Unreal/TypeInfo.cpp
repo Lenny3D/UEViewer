@@ -370,7 +370,7 @@ static void CollectProps(const CTypeInfo *Type, const void *Data, CPropDump &Dum
 			// formatting of property start
 			if (IsArray)
 			{
-				PD->PrintName("[%d]", PropCount);
+				//PD->PrintName("[%d]", PropCount);
 				if (!PropCount)
 				{
 					PD->PrintValue("{}");
@@ -460,92 +460,77 @@ static void PrintIndent(FArchive& Ar, int Value)
 
 static void PrintProps(const CPropDump &Dump, FArchive& Ar, int Indent, bool TopLevel, int MaxLineWidth = 80)
 {
-	PrintIndent(Ar, Indent);
 
 	const int NumNestedProps = Dump.Nested.Num();
+	PrintIndent(Ar, Indent);
 	if (NumNestedProps)
 	{
+		bool isArray = Dump.Nested[0].bIsArrayItem;
+		bool bNameEmpty = false;
 		// complex property
-		bool bNamePrinted = false;
-		if (!Dump.Name.IsEmpty())
+		if (Dump.Name.IsEmpty()) 
 		{
-			Ar.Printf("%s =", *Dump.Name);	// root CPropDump will not have a name
-			bNamePrinted = true;
+			/*Ar.Printf("\"default\": ");
+			if (isArray) {
+				Ar.Printf("[\n");
+			} else {
+				Ar.Printf("{\n");
+			}*/
+			//PrintIndent(Ar, Indent + 1);
+			bNameEmpty = true;
+		}
+		else
+		{
+			if (Dump.bIsArrayItem) 
+			{
+				Ar.Printf("{\n");
+			}
+			else 
+			{
+				Ar.Printf("\"%s\": ", *Dump.Name);	// root CPropDump will not have a name
+				if (isArray) 
+				{
+					Ar.Printf("[\n");
+				}
+				else {
+					Ar.Printf("{\n");
+				}
+				//PrintIndent(Ar, Indent + 1);
+			}
 		}
 
 		bool IsSimple = true;
 		int TotalLen = 0;
-		int i;
-
-		// check whether we can display all nested properties in a single line or not
+		int i = 0;
+		// complex value display
 		for (const CPropDump &Prop : Dump.Nested)
 		{
 			if (Prop.bDiscard) continue;
-
-			if (Prop.Nested.Num())
+			PrintProps(Prop, Ar, Indent+1, false, MaxLineWidth);
+			if (i < NumNestedProps - 1)
 			{
-				IsSimple = false;
-				break;
+				Ar.Printf(",");
 			}
-			TotalLen += Prop.Value.Len() + 2;
-			if (!Prop.bIsArrayItem)
-				TotalLen += Prop.Name.Len();
-			if (TotalLen >= MaxLineWidth)
-			{
-				IsSimple = false;
-				break;
-			}
+			Ar.Printf("\n");
+			i++;
 		}
+		PrintIndent(Ar, Indent);
 
-		if (IsSimple)
+		if (isArray) 
 		{
-			// single-line value display
-			Ar.Printf(" { ");
-			bool bFirst = true;
-			for (const CPropDump &Prop : Dump.Nested)
-			{
-				if (Prop.bDiscard) continue;
-
-				if (!bFirst)
-				{
-					Ar.Printf(", ");
-				}
-				bFirst = false;
-
-				if (Prop.bIsArrayItem)
-					Ar.Printf("%s", *Prop.Value);
-				else
-					Ar.Printf("%s=%s", *Prop.Name, *Prop.Value);
-			}
-			Ar.Printf(" }\n");
-		}
-		else
+			Ar.Printf("]");
+		} 
+		else if (!bNameEmpty)
 		{
-			// complex value display
-			if (bNamePrinted) Ar.Printf("\n");
-			if (!TopLevel)
-			{
-				PrintIndent(Ar, Indent);
-				Ar.Printf("{\n");
-			}
-
-			for (const CPropDump &Prop : Dump.Nested)
-			{
-				if (Prop.bDiscard) continue;
-				PrintProps(Prop, Ar, Indent+1, false, MaxLineWidth);
-			}
-
-			if (!TopLevel)
-			{
-				PrintIndent(Ar, Indent);
-				Ar.Printf("}\n");
-			}
+			Ar.Printf("}");
 		}
+		/*PrintIndent(Ar, Indent);
+		Ar.Printf("}");*/
 	}
 	else
 	{
 		// single property
-		if (!Dump.Name.IsEmpty()) Ar.Printf("%s = %s\n", *Dump.Name, *Dump.Value);
+		if (!Dump.Name.IsEmpty()) Ar.Printf("\"%s\": \"%s\"", *Dump.Name, *Dump.Value);
 	}
 }
 
@@ -644,8 +629,10 @@ void CTypeInfo::SaveProps(const void *Data, FArchive& Ar) const
 	CPropDump Dump;
 	CollectProps(this, Data, Dump);
 
+	Ar.Printf("{\n");
 	// Note: using indent -1 for better in-file formatting
-	PrintProps(Dump, Ar, -1, true, MAX_DUMP_LINE);
+	PrintProps(Dump, Ar, 0, true, MAX_DUMP_LINE);
+	Ar.Printf("}\n");
 
 	unguard;
 }
